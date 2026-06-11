@@ -9,67 +9,67 @@
 const PRESETS = {
   textura: {
     name: 'Tekstura kwadratowa (textura quadrata)',
-    desc: 'Pismo gotyckie XIII–XV w. Wysokość x: 5 szerokości stalówki, krótkie wydłużenia.',
+    info: 'Pismo gotyckie XIII–XV w. Wysokość x: 5 szerokości stalówki, krótkie wydłużenia.',
     mode: 'nib', nib: 3.8, asc: 2, x: 5, desc: 2,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   rotunda: {
     name: 'Rotunda',
-    desc: 'Gotyk włoski, bardziej zaokrąglony. Wysokość x: 4 szerokości stalówki.',
+    info: 'Gotyk włoski, bardziej zaokrąglony. Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2, x: 4, desc: 2,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   uncial: {
     name: 'Uncjała',
-    desc: 'Pismo majuskułowe IV–VIII w. Wysokość x: 4 szerokości stalówki, minimalne wydłużenia.',
+    info: 'Pismo majuskułowe IV–VIII w. Wysokość x: 4 szerokości stalówki, minimalne wydłużenia.',
     mode: 'nib', nib: 3.8, asc: 1, x: 4, desc: 1,
     gap: 10, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   halfUncial: {
     name: 'Półuncjała',
-    desc: 'Pismo wczesnośredniowieczne (np. Book of Kells). Wysokość x: 4 szerokości stalówki.',
+    info: 'Pismo wczesnośredniowieczne (np. Book of Kells). Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2, x: 4, desc: 2,
     gap: 9, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   carolingian: {
     name: 'Minuskuła karolińska',
-    desc: 'Pismo IX–XII w., smukłe wydłużenia. Wysokość x: 3 szerokości stalówki.',
+    info: 'Pismo IX–XII w., smukłe wydłużenia. Wysokość x: 3 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 3, x: 3, desc: 3,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   foundational: {
     name: 'Pismo fundacyjne (foundational hand)',
-    desc: 'Krój Edwarda Johnstona oparty na Ramseyowskim psałterzu. Wysokość x: 4 szerokości stalówki.',
+    info: 'Krój Edwarda Johnstona oparty na Ramseyowskim psałterzu. Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 3, x: 4, desc: 3,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   italic: {
     name: 'Italika (kursywa humanistyczna)',
-    desc: 'Renesansowa kancelareska. Wysokość x: 5 szerokości stalówki, nachylenie ok. 5–10°.',
+    info: 'Renesansowa kancelareska. Wysokość x: 5 szerokości stalówki, nachylenie ok. 5–10°.',
     mode: 'nib', nib: 3.8, asc: 4, x: 5, desc: 4,
     gap: 7, slant: true, slantAngle: 7, slantSpacing: 20,
   },
   fraktur: {
     name: 'Fraktura',
-    desc: 'Pismo gotyckie XVI w. Wysokość x: 5 szerokości stalówki.',
+    info: 'Pismo gotyckie XVI w. Wysokość x: 5 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2.5, x: 5, desc: 2.5,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   copperplate: {
     name: 'Angielka (copperplate)',
-    desc: 'Pismo stalówki ostrej, proporcje 3:2:3, nachylenie 55° od linii bazowej (35° od pionu).',
+    info: 'Pismo stalówki ostrej, proporcje 3:2:3, nachylenie 55° od linii bazowej (35° od pionu).',
     mode: 'mm', ascMm: 7.5, xMm: 5, descMm: 7.5,
     gap: 6, slant: true, slantAngle: 35, slantSpacing: 12,
   },
   spencerian: {
     name: 'Spencerian',
-    desc: 'Amerykańska kaligrafia XIX w., proporcje 2:1:2, nachylenie 52° od linii bazowej.',
+    info: 'Amerykańska kaligrafia XIX w., proporcje 2:1:2, nachylenie 52° od linii bazowej.',
     mode: 'mm', ascMm: 8, xMm: 4, descMm: 8,
     gap: 6, slant: true, slantAngle: 38, slantSpacing: 12,
   },
   custom: {
     name: 'Własna liniatura',
-    desc: 'Ustaw wszystkie parametry samodzielnie.',
+    info: 'Ustaw wszystkie parametry samodzielnie.',
     mode: 'nib', nib: 2, asc: 3, x: 4, desc: 3,
     gap: 8, slant: false, slantAngle: 10, slantSpacing: 15,
   },
@@ -222,6 +222,9 @@ function renderPreview() {
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', `0 0 ${s.pageW} ${s.pageH}`);
   svg.setAttribute('xmlns', ns);
+  // proporcje elementu = proporcje kartki (inaczej tło SVG rozciąga się na całą szerokość)
+  svg.style.aspectRatio = `${s.pageW} / ${s.pageH}`;
+  svg.style.maxWidth = `calc(82vh * ${(s.pageW / s.pageH).toFixed(4)})`;
 
   for (const r of rects) {
     const el = document.createElementNS(ns, 'rect');
@@ -327,7 +330,7 @@ function stripDiacritics(str) {
 function applyPreset(key) {
   const p = PRESETS[key];
   if (!p) return;
-  $('presetDesc').textContent = p.desc;
+  $('presetDesc').textContent = p.info;
   if (p.mode === 'nib') {
     $('modeNib').checked = true;
     $('nibWidth').value = p.nib;
@@ -356,7 +359,7 @@ function syncModeVisibility() {
 function switchToCustom() {
   if ($('preset').value !== 'custom') {
     $('preset').value = 'custom';
-    $('presetDesc').textContent = PRESETS.custom.desc;
+    $('presetDesc').textContent = PRESETS.custom.info;
   }
 }
 
