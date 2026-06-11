@@ -107,7 +107,23 @@ function readState() {
     marginLR: parseFloat($('marginLR').value) || 0,
     footer: $('footerOn').checked,
     presetKey: $('preset').value,
+    colors: {
+      base: $('colBase').value,
+      waist: $('colWaist').value,
+      ext: $('colExt').value,
+      slant: $('colSlant').value,
+    },
+    fills: {
+      asc: $('fillAscOn').checked ? $('fillAsc').value : null,
+      x: $('fillXOn').checked ? $('fillX').value : null,
+      desc: $('fillDescOn').checked ? $('fillDesc').value : null,
+    },
   };
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
 /* ============================================================
@@ -117,13 +133,14 @@ function readState() {
    ============================================================ */
 function buildLines(s) {
   const lines = [];
+  const rects = [];
   const left = s.marginLR;
   const right = s.pageW - s.marginLR;
   const rowH = s.asc + s.x + s.desc;
   const footerSpace = s.footer ? 8 : 0;
   const bottom = s.pageH - s.marginTB - footerSpace;
 
-  if (rowH <= 0 || right <= left) return { lines, rows: 0 };
+  if (rowH <= 0 || right <= left) return { lines, rects, rows: 0 };
 
   let rows = 0;
   let top = s.marginTB;
@@ -132,6 +149,10 @@ function buildLines(s) {
     const yWaist = top + s.asc;
     const yBase = top + s.asc + s.x;
     const yDesc = top + rowH;
+
+    if (s.fills.asc && s.asc > 0) rects.push({ x: left, y: yAsc, w: right - left, h: s.asc, color: s.fills.asc });
+    if (s.fills.x) rects.push({ x: left, y: yWaist, w: right - left, h: s.x, color: s.fills.x });
+    if (s.fills.desc && s.desc > 0) rects.push({ x: left, y: yBase, w: right - left, h: s.desc, color: s.fills.desc });
 
     if (s.asc > 0) lines.push({ x1: left, y1: yAsc, x2: right, y2: yAsc, kind: 'ext' });
     lines.push({ x1: left, y1: yWaist, x2: right, y2: yWaist, kind: 'waist' });
@@ -154,7 +175,7 @@ function buildLines(s) {
     rows++;
     top += rowH + s.gap;
   }
-  return { lines, rows };
+  return { lines, rects, rows };
 }
 
 /* przycinanie odcinka do prostokąta (Liang–Barsky, tylko x, bo y już pasuje) */
@@ -175,12 +196,12 @@ function clipSegment(x1, y1, x2, y2, xmin, xmax, ymin, ymax) {
   };
 }
 
-/* ---------- style linii (wspólne dla SVG i PDF) ---------- */
+/* ---------- style linii (wspólne dla SVG i PDF); kolory z formularza ---------- */
 const LINE_STYLE = {
-  base:  { color: [60, 60, 60],    width: 0.35, dash: null },
-  waist: { color: [110, 110, 110], width: 0.25, dash: null },
-  ext:   { color: [150, 150, 150], width: 0.18, dash: [2, 1.5] },
-  slant: { color: [170, 170, 170], width: 0.15, dash: [1, 1] },
+  base:  { width: 0.35, dash: null },
+  waist: { width: 0.25, dash: null },
+  ext:   { width: 0.18, dash: [2, 1.5] },
+  slant: { width: 0.15, dash: [1, 1] },
 };
 
 function footerText(s) {
@@ -196,11 +217,21 @@ function footerText(s) {
    ============================================================ */
 function renderPreview() {
   const s = readState();
-  const { lines, rows } = buildLines(s);
+  const { lines, rects, rows } = buildLines(s);
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', `0 0 ${s.pageW} ${s.pageH}`);
   svg.setAttribute('xmlns', ns);
+
+  for (const r of rects) {
+    const el = document.createElementNS(ns, 'rect');
+    el.setAttribute('x', r.x.toFixed(3));
+    el.setAttribute('y', r.y.toFixed(3));
+    el.setAttribute('width', r.w.toFixed(3));
+    el.setAttribute('height', r.h.toFixed(3));
+    el.setAttribute('fill', r.color);
+    svg.appendChild(el);
+  }
 
   for (const ln of lines) {
     const st = LINE_STYLE[ln.kind];
@@ -209,7 +240,7 @@ function renderPreview() {
     el.setAttribute('y1', ln.y1.toFixed(3));
     el.setAttribute('x2', ln.x2.toFixed(3));
     el.setAttribute('y2', ln.y2.toFixed(3));
-    el.setAttribute('stroke', `rgb(${st.color.join(',')})`);
+    el.setAttribute('stroke', s.colors[ln.kind]);
     el.setAttribute('stroke-width', st.width);
     if (st.dash) el.setAttribute('stroke-dasharray', st.dash.join(' '));
     svg.appendChild(el);
@@ -246,7 +277,7 @@ function renderPreview() {
    ============================================================ */
 function downloadPdf() {
   const s = readState();
-  const { lines } = buildLines(s);
+  const { lines, rects } = buildLines(s);
   const doc = new window.jspdf.jsPDF({
     unit: 'mm',
     format: 'a4',
@@ -254,9 +285,14 @@ function downloadPdf() {
     compress: true,
   });
 
+  for (const r of rects) {
+    doc.setFillColor(...hexToRgb(r.color));
+    doc.rect(r.x, r.y, r.w, r.h, 'F');
+  }
+
   for (const ln of lines) {
     const st = LINE_STYLE[ln.kind];
-    doc.setDrawColor(...st.color);
+    doc.setDrawColor(...hexToRgb(s.colors[ln.kind]));
     doc.setLineWidth(st.width);
     doc.setLineDashPattern(st.dash || [], 0);
     doc.line(ln.x1, ln.y1, ln.x2, ln.y2);
@@ -342,8 +378,10 @@ function init() {
     $(id).addEventListener('input', () => { switchToCustom(); syncModeVisibility(); renderPreview(); });
   }
 
-  // ustawienia strony nie zmieniają presetu
-  for (const id of ['orientPortrait', 'orientLandscape', 'marginTB', 'marginLR', 'footerOn']) {
+  // ustawienia strony i kolory nie zmieniają presetu
+  for (const id of ['orientPortrait', 'orientLandscape', 'marginTB', 'marginLR', 'footerOn',
+                    'colBase', 'colWaist', 'colExt', 'colSlant',
+                    'fillAscOn', 'fillAsc', 'fillXOn', 'fillX', 'fillDescOn', 'fillDesc']) {
     $(id).addEventListener('input', renderPreview);
   }
 
