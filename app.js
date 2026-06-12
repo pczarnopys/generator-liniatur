@@ -8,67 +8,67 @@
    ============================================================ */
 const PRESETS = {
   textura: {
-    name: 'Tekstura kwadratowa (textura quadrata)',
+    name: 'Tekstura kwadratowa', sub: 'Blackletter XIII–XV w.',
     info: 'Pismo gotyckie XIII–XV w. Wysokość x: 5 szerokości stalówki, krótkie wydłużenia.',
     mode: 'nib', nib: 3.8, asc: 2, x: 5, desc: 2,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   rotunda: {
-    name: 'Rotunda',
+    name: 'Rotunda', sub: 'Gotyk włoski',
     info: 'Gotyk włoski, bardziej zaokrąglony. Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2, x: 4, desc: 2,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   uncial: {
-    name: 'Uncjała',
+    name: 'Uncjała', sub: 'Pismo obłe IV–VIII w.',
     info: 'Pismo majuskułowe IV–VIII w. Wysokość x: 4 szerokości stalówki, minimalne wydłużenia.',
     mode: 'nib', nib: 3.8, asc: 1, x: 4, desc: 1,
     gap: 10, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   halfUncial: {
-    name: 'Półuncjała',
+    name: 'Półuncjała', sub: 'Wczesne średniowiecze',
     info: 'Pismo wczesnośredniowieczne (np. Book of Kells). Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2, x: 4, desc: 2,
     gap: 9, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   carolingian: {
-    name: 'Minuskuła karolińska',
+    name: 'Minuskuła karolińska', sub: 'IX–XII w.',
     info: 'Pismo IX–XII w., smukłe wydłużenia. Wysokość x: 3 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 3, x: 3, desc: 3,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   foundational: {
-    name: 'Pismo fundacyjne (foundational hand)',
+    name: 'Pismo fundacyjne', sub: 'Krągła ręka Johnstona',
     info: 'Krój Edwarda Johnstona oparty na Ramseyowskim psałterzu. Wysokość x: 4 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 3, x: 4, desc: 3,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   italic: {
-    name: 'Italika (kursywa humanistyczna)',
+    name: 'Italika', sub: 'Kursywa, 5–10°',
     info: 'Renesansowa kancelareska. Wysokość x: 5 szerokości stalówki, nachylenie ok. 5–10°.',
     mode: 'nib', nib: 3.8, asc: 4, x: 5, desc: 4,
     gap: 7, slant: true, slantAngle: 7, slantSpacing: 20,
   },
   fraktur: {
-    name: 'Fraktura',
+    name: 'Fraktura', sub: 'Gotyk XVI w.',
     info: 'Pismo gotyckie XVI w. Wysokość x: 5 szerokości stalówki.',
     mode: 'nib', nib: 3.8, asc: 2.5, x: 5, desc: 2.5,
     gap: 8, slant: false, slantAngle: 0, slantSpacing: 15,
   },
   copperplate: {
-    name: 'Angielka (copperplate)',
+    name: 'Angielka', sub: 'Copperplate 55°',
     info: 'Pismo stalówki ostrej, proporcje 3:2:3, nachylenie 55° od linii bazowej (35° od pionu).',
     mode: 'mm', ascMm: 7.5, xMm: 5, descMm: 7.5,
     gap: 6, slant: true, slantAngle: 35, slantSpacing: 12,
   },
   spencerian: {
-    name: 'Spencerian',
+    name: 'Spencerian', sub: 'XIX w., 52°',
     info: 'Amerykańska kaligrafia XIX w., proporcje 2:1:2, nachylenie 52° od linii bazowej.',
     mode: 'mm', ascMm: 8, xMm: 4, descMm: 8,
     gap: 6, slant: true, slantAngle: 38, slantSpacing: 12,
   },
   custom: {
-    name: 'Własna liniatura',
+    name: 'Niestandardowa', sub: 'Własne wymiary',
     info: 'Ustaw wszystkie parametry samodzielnie.',
     mode: 'nib', nib: 2, asc: 3, x: 4, desc: 3,
     gap: 8, slant: false, slantAngle: 10, slantSpacing: 15,
@@ -79,11 +79,21 @@ const A4 = { w: 210, h: 297 };
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------- odczyt stanu z formularza ---------- */
+/* stan interfejsu nieprzechowywany w polach formularza */
+const ui = {
+  preset: 'textura',
+  mode: 'nib',
+  slant: false,
+  orientation: 'portrait',
+  footer: true,
+  fills: { asc: false, x: true, desc: false },
+  zoom: 1,
+};
+
+/* ---------- odczyt pełnego stanu ---------- */
 function readState() {
-  const nibMode = $('modeNib').checked;
   let asc, x, desc;
-  if (nibMode) {
+  if (ui.mode === 'nib') {
     const nib = parseFloat($('nibWidth').value) || 1;
     asc = nib * (parseFloat($('ascR').value) || 0);
     x = nib * (parseFloat($('xR').value) || 1);
@@ -93,20 +103,20 @@ function readState() {
     x = parseFloat($('xMm').value) || 1;
     desc = parseFloat($('descMm').value) || 0;
   }
-  const portrait = $('orientPortrait').checked;
+  const portrait = ui.orientation === 'portrait';
   return {
     asc, x, desc,
     gap: parseFloat($('gap').value) || 0,
-    slant: $('slantOn').checked,
+    slant: ui.slant,
     slantAngle: parseFloat($('slantAngle').value) || 0,
     slantSpacing: Math.max(1, parseFloat($('slantSpacing').value) || 15),
     pageW: portrait ? A4.w : A4.h,
     pageH: portrait ? A4.h : A4.w,
-    orientation: portrait ? 'portrait' : 'landscape',
+    orientation: ui.orientation,
     marginTB: parseFloat($('marginTB').value) || 0,
     marginLR: parseFloat($('marginLR').value) || 0,
-    footer: $('footerOn').checked,
-    presetKey: $('preset').value,
+    footer: ui.footer,
+    presetKey: ui.preset,
     colors: {
       base: $('colBase').value,
       waist: $('colWaist').value,
@@ -114,9 +124,9 @@ function readState() {
       slant: $('colSlant').value,
     },
     fills: {
-      asc: $('fillAscOn').checked ? $('fillAsc').value : null,
-      x: $('fillXOn').checked ? $('fillX').value : null,
-      desc: $('fillDescOn').checked ? $('fillDesc').value : null,
+      asc: ui.fills.asc ? $('fillAsc').value : null,
+      x: ui.fills.x ? $('fillX').value : null,
+      desc: ui.fills.desc ? $('fillDesc').value : null,
     },
   };
 }
@@ -128,7 +138,7 @@ function hexToRgb(hex) {
 
 /* ============================================================
    Geometria liniatury — wszystko w mm.
-   Zwraca listę linii { x1, y1, x2, y2, kind }.
+   Zwraca linie { x1, y1, x2, y2, kind } i prostokąty wypełnień.
    kind: 'base' | 'waist' | 'ext' | 'slant'
    ============================================================ */
 function buildLines(s) {
@@ -162,12 +172,9 @@ function buildLines(s) {
     if (s.slant && Math.abs(s.slantAngle) < 89) {
       // linia pochyła: od dołu wiersza do góry, odchylona od pionu o slantAngle
       const dx = rowH * Math.tan((s.slantAngle * Math.PI) / 180);
-      // pozycje na linii dolnej wiersza; clipping do [left, right]
       const start = dx > 0 ? left : left + Math.abs(dx);
       for (let xb = start; xb <= right + Math.abs(dx); xb += s.slantSpacing) {
-        let x1 = xb, y1 = yDesc, x2 = xb + dx, y2 = yAsc;
-        // przytnij do pola zapisu
-        const clipped = clipSegment(x1, y1, x2, y2, left, right, yAsc, yDesc);
+        const clipped = clipSegment(xb, yDesc, xb + dx, yAsc, left, right, yAsc, yDesc);
         if (clipped) lines.push({ ...clipped, kind: 'slant' });
       }
     }
@@ -178,7 +185,7 @@ function buildLines(s) {
   return { lines, rects, rows };
 }
 
-/* przycinanie odcinka do prostokąta (Liang–Barsky, tylko x, bo y już pasuje) */
+/* przycinanie odcinka do prostokąta (Liang–Barsky) */
 function clipSegment(x1, y1, x2, y2, xmin, xmax, ymin, ymax) {
   let t0 = 0, t1 = 1;
   const dx = x2 - x1, dy = y2 - y1;
@@ -198,10 +205,10 @@ function clipSegment(x1, y1, x2, y2, xmin, xmax, ymin, ymax) {
 
 /* ---------- style linii (wspólne dla SVG i PDF); kolory z formularza ---------- */
 const LINE_STYLE = {
-  base:  { width: 0.35, dash: null },
-  waist: { width: 0.25, dash: null },
-  ext:   { width: 0.18, dash: [2, 1.5] },
-  slant: { width: 0.15, dash: [1, 1] },
+  base:  { width: 0.3,  dash: null },
+  waist: { width: 0.2,  dash: null },
+  ext:   { width: 0.16, dash: [2, 1.5] },
+  slant: { width: 0.13, dash: [1, 1] },
 };
 
 function footerText(s) {
@@ -221,10 +228,7 @@ function renderPreview() {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', `0 0 ${s.pageW} ${s.pageH}`);
-  svg.setAttribute('xmlns', ns);
-  // proporcje elementu = proporcje kartki (inaczej tło SVG rozciąga się na całą szerokość)
-  svg.style.aspectRatio = `${s.pageW} / ${s.pageH}`;
-  svg.style.maxWidth = `calc(82vh * ${(s.pageW / s.pageH).toFixed(4)})`;
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
   for (const r of rects) {
     const el = document.createElementNS(ns, 'rect');
@@ -254,25 +258,28 @@ function renderPreview() {
     txt.setAttribute('x', s.marginLR);
     txt.setAttribute('y', s.pageH - s.marginTB + 1);
     txt.setAttribute('font-size', '2.6');
-    txt.setAttribute('fill', '#999');
-    txt.setAttribute('font-family', 'Helvetica, Arial, sans-serif');
+    txt.setAttribute('fill', '#A2967F');
+    txt.setAttribute('font-family', "'Hanken Grotesk', Helvetica, sans-serif");
     txt.textContent = footerText(s);
     svg.appendChild(txt);
   }
 
-  const wrap = $('preview');
-  wrap.innerHTML = '';
-  wrap.appendChild(svg);
+  const page = $('page');
+  page.innerHTML = '';
+  page.appendChild(svg);
+  page.style.aspectRatio = `${s.pageW} / ${s.pageH}`;
+  page.style.height = `${ui.zoom * 100}%`;
 
-  const rowH = s.asc + s.x + s.desc;
-  $('rowInfo').textContent =
-    `Wierszy na stronie: ${rows} · wysokość wiersza: ${rowH.toFixed(1)} mm (${s.asc.toFixed(1)} + ${s.x.toFixed(1)} + ${s.desc.toFixed(1)})`;
+  $('orientName').textContent = s.orientation === 'portrait' ? 'pionowo' : 'poziomo';
+  $('rowInfo').textContent = `${rows} ${rowsWord(rows)} po ${(s.asc + s.x + s.desc).toFixed(1).replace('.', ',')} mm`;
+  $('zoomPct').textContent = `${Math.round(ui.zoom * 100)}%`;
+}
 
-  // podgląd wartości mm przy trybie stalówki
-  const nib = parseFloat($('nibWidth').value) || 0;
-  $('ascMmOut').textContent = `= ${(nib * (parseFloat($('ascR').value) || 0)).toFixed(1)} mm`;
-  $('xMmOut').textContent = `= ${(nib * (parseFloat($('xR').value) || 0)).toFixed(1)} mm`;
-  $('descMmOut').textContent = `= ${(nib * (parseFloat($('descR').value) || 0)).toFixed(1)} mm`;
+function rowsWord(n) {
+  if (n === 1) return 'wiersz';
+  const d = n % 10, h = n % 100;
+  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return 'wiersze';
+  return 'wierszy';
 }
 
 /* ============================================================
@@ -305,7 +312,7 @@ function downloadPdf() {
   if (s.footer) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
-    doc.setTextColor(150);
+    doc.setTextColor(162, 150, 127);
     // jsPDF nie ma polskich znaków w fontach standardowych — transliteracja
     doc.text(stripDiacritics(footerText(s)), s.marginLR, s.pageH - s.marginTB + 2);
     doc.text('Drukuj w skali 100%', s.pageW - s.marginLR, s.pageH - s.marginTB + 2, { align: 'right' });
@@ -325,72 +332,196 @@ function stripDiacritics(str) {
 }
 
 /* ============================================================
-   Obsługa formularza
+   Miniaturki krojów na kartach presetów
    ============================================================ */
+function presetThumb(key, p) {
+  const asc = p.mode === 'nib' ? p.asc : p.ascMm;
+  const x = p.mode === 'nib' ? p.x : p.xMm;
+  const desc = p.mode === 'nib' ? p.desc : p.descMm;
+  const block = asc + x + desc;
+  const W = 100, H = 46, pad = 7;
+  const sc = (H - 2 * pad) / block;
+  const yA = pad, yW = pad + asc * sc, yB = pad + (asc + x) * sc, yD = pad + block * sc;
+  const lx0 = pad + 1, lx1 = W - pad - 1;
+  let inner = `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+  inner += `<rect x="${lx0}" y="${yW.toFixed(2)}" width="${lx1 - lx0}" height="${(yB - yW).toFixed(2)}" fill="#FBF6EC"/>`;
+  if (p.slant) {
+    const tan = Math.tan((p.slantAngle * Math.PI) / 180);
+    let slants = '';
+    for (let xx = lx0 + 4; xx < lx1; xx += 11) {
+      slants += `<line x1="${xx}" y1="${yD.toFixed(2)}" x2="${(xx + (yD - yA) * tan).toFixed(2)}" y2="${yA}" stroke="#D7A38C" stroke-width="0.7"/>`;
+    }
+    inner += `<defs><clipPath id="thc-${key}"><rect x="${lx0}" y="${yA}" width="${lx1 - lx0}" height="${(yD - yA).toFixed(2)}"/></clipPath></defs>`;
+    inner += `<g clip-path="url(#thc-${key})">${slants}</g>`;
+  }
+  inner += `<line x1="${lx0}" y1="${yA}" x2="${lx1}" y2="${yA}" stroke="#CBD6DC" stroke-width="0.8"/>`;
+  inner += `<line x1="${lx0}" y1="${yW.toFixed(2)}" x2="${lx1}" y2="${yW.toFixed(2)}" stroke="#9CB0BC" stroke-width="1"/>`;
+  inner += `<line x1="${lx0}" y1="${yB.toFixed(2)}" x2="${lx1}" y2="${yB.toFixed(2)}" stroke="#2E5066" stroke-width="1.5"/>`;
+  inner += `<line x1="${lx0}" y1="${yD.toFixed(2)}" x2="${lx1}" y2="${yD.toFixed(2)}" stroke="#CBD6DC" stroke-width="0.8"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${inner}</svg>`;
+}
+
+/* ============================================================
+   Obsługa interfejsu
+   ============================================================ */
+function buildPresetCards() {
+  const grid = $('presetGrid');
+  grid.innerHTML = '';
+  for (const [key, p] of Object.entries(PRESETS)) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'preset-card';
+    btn.dataset.key = key;
+    btn.innerHTML = `${presetThumb(key, p)}<span class="pc-name">${p.name}</span><span class="pc-sub">${p.sub}</span>`;
+    btn.addEventListener('click', () => { applyPreset(key); renderPreview(); });
+    grid.appendChild(btn);
+  }
+}
+
+function markActivePreset() {
+  for (const card of document.querySelectorAll('.preset-card')) {
+    card.classList.toggle('active', card.dataset.key === ui.preset);
+  }
+  $('presetDesc').textContent = PRESETS[ui.preset].info;
+}
+
 function applyPreset(key) {
   const p = PRESETS[key];
   if (!p) return;
-  $('presetDesc').textContent = p.info;
-  if (p.mode === 'nib') {
-    $('modeNib').checked = true;
-    $('nibWidth').value = p.nib;
-    $('ascR').value = p.asc;
-    $('xR').value = p.x;
-    $('descR').value = p.desc;
-  } else {
-    $('modeMm').checked = true;
-    $('ascMm').value = p.ascMm;
-    $('xMm').value = p.xMm;
-    $('descMm').value = p.descMm;
+  ui.preset = key;
+  if (key !== 'custom') {
+    setMode(p.mode, true);
+    if (p.mode === 'nib') {
+      $('nibWidth').value = p.nib;
+      $('ascR').value = p.asc;
+      $('xR').value = p.x;
+      $('descR').value = p.desc;
+    } else {
+      $('ascMm').value = p.ascMm;
+      $('xMm').value = p.xMm;
+      $('descMm').value = p.descMm;
+    }
+    $('gap').value = p.gap;
+    setSlant(p.slant);
+    $('slantAngle').value = p.slantAngle;
+    $('slantSpacing').value = p.slantSpacing;
   }
-  $('gap').value = p.gap;
-  $('slantOn').checked = p.slant;
-  $('slantAngle').value = p.slantAngle;
-  $('slantSpacing').value = p.slantSpacing;
-  syncModeVisibility();
-}
-
-function syncModeVisibility() {
-  const nibMode = $('modeNib').checked;
-  $('nibFields').hidden = !nibMode;
-  $('mmFields').hidden = nibMode;
+  markActivePreset();
 }
 
 function switchToCustom() {
-  if ($('preset').value !== 'custom') {
-    $('preset').value = 'custom';
-    $('presetDesc').textContent = PRESETS.custom.info;
+  if (ui.preset !== 'custom') {
+    ui.preset = 'custom';
+    markActivePreset();
   }
 }
 
+function setMode(mode, keepPreset) {
+  ui.mode = mode;
+  $('modeNib').classList.toggle('active', mode === 'nib');
+  $('modeMm').classList.toggle('active', mode === 'mm');
+  $('nibFields').hidden = mode !== 'nib';
+  $('mmFields').hidden = mode !== 'mm';
+  if (!keepPreset) switchToCustom();
+}
+
+function setSlant(on) {
+  ui.slant = on;
+  $('slantOn').setAttribute('aria-pressed', on);
+  $('slantFields').hidden = !on;
+}
+
+function setFill(zone, on) {
+  ui.fills[zone] = on;
+  const cap = zone[0].toUpperCase() + zone.slice(1);
+  $(`fill${cap}On`).setAttribute('aria-pressed', on);
+  $(`fill${cap}Row`).classList.toggle('off', !on);
+}
+
+function syncSwatches() {
+  for (const sw of document.querySelectorAll('[data-swatch-for]')) {
+    sw.style.background = $(sw.dataset.swatchFor).value;
+  }
+  for (const hx of document.querySelectorAll('[data-hex-for]')) {
+    hx.textContent = $(hx.dataset.hexFor).value.toUpperCase();
+  }
+}
+
+function setOrientation(o) {
+  ui.orientation = o;
+  $('orientPortrait').classList.toggle('active', o === 'portrait');
+  $('orientLandscape').classList.toggle('active', o === 'landscape');
+}
+
 function init() {
-  const sel = $('preset');
-  for (const [key, p] of Object.entries(PRESETS)) {
-    const opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = p.name;
-    sel.appendChild(opt);
+  buildPresetCards();
+
+  // akordeon
+  for (const sec of document.querySelectorAll('.acc')) {
+    sec.querySelector('.acc-head').addEventListener('click', () => sec.classList.toggle('open'));
+  }
+  document.querySelector('.acc[data-key="kroj"]').classList.add('open');
+  document.querySelector('.acc[data-key="wymiary"]').classList.add('open');
+
+  // zakładki mobilne
+  document.body.classList.add('view-preview');
+  $('tabSettings').addEventListener('click', () => {
+    document.body.classList.replace('view-preview', 'view-settings');
+    $('tabSettings').classList.add('active');
+    $('tabPreview').classList.remove('active');
+  });
+  $('tabPreview').addEventListener('click', () => {
+    document.body.classList.replace('view-settings', 'view-preview');
+    $('tabPreview').classList.add('active');
+    $('tabSettings').classList.remove('active');
+  });
+
+  // tryb wymiarów
+  $('modeNib').addEventListener('click', () => { setMode('nib'); renderPreview(); });
+  $('modeMm').addEventListener('click', () => { setMode('mm'); renderPreview(); });
+
+  // przełączniki
+  $('slantOn').addEventListener('click', () => { setSlant(!ui.slant); switchToCustom(); renderPreview(); });
+  $('footerOn').addEventListener('click', () => {
+    ui.footer = !ui.footer;
+    $('footerOn').setAttribute('aria-pressed', ui.footer);
+    renderPreview();
+  });
+  for (const zone of ['asc', 'x', 'desc']) {
+    const cap = zone[0].toUpperCase() + zone.slice(1);
+    $(`fill${cap}On`).addEventListener('click', () => { setFill(zone, !ui.fills[zone]); renderPreview(); });
+    $(`fill${cap}`).addEventListener('input', () => {
+      if (!ui.fills[zone]) setFill(zone, true);
+      syncSwatches();
+      renderPreview();
+    });
   }
 
-  sel.addEventListener('change', () => { applyPreset(sel.value); renderPreview(); });
+  // orientacja
+  $('orientPortrait').addEventListener('click', () => { setOrientation('portrait'); renderPreview(); });
+  $('orientLandscape').addEventListener('click', () => { setOrientation('landscape'); renderPreview(); });
 
-  // zmiana parametrów pisma przełącza na liniaturę własną
-  const paramIds = ['nibWidth', 'ascR', 'xR', 'descR', 'ascMm', 'xMm', 'descMm',
-                    'gap', 'slantOn', 'slantAngle', 'slantSpacing', 'modeNib', 'modeMm'];
-  for (const id of paramIds) {
-    $(id).addEventListener('input', () => { switchToCustom(); syncModeVisibility(); renderPreview(); });
+  // zmiana parametrów pisma przełącza na liniaturę niestandardową
+  for (const id of ['nibWidth', 'ascR', 'xR', 'descR', 'ascMm', 'xMm', 'descMm', 'gap', 'slantAngle', 'slantSpacing']) {
+    $(id).addEventListener('input', () => { switchToCustom(); renderPreview(); });
   }
 
-  // ustawienia strony i kolory nie zmieniają presetu
-  for (const id of ['orientPortrait', 'orientLandscape', 'marginTB', 'marginLR', 'footerOn',
-                    'colBase', 'colWaist', 'colExt', 'colSlant',
-                    'fillAscOn', 'fillAsc', 'fillXOn', 'fillX', 'fillDescOn', 'fillDesc']) {
+  // ustawienia strony i kolory linii nie zmieniają presetu
+  for (const id of ['marginTB', 'marginLR']) {
     $(id).addEventListener('input', renderPreview);
   }
+  for (const id of ['colBase', 'colWaist', 'colExt', 'colSlant']) {
+    $(id).addEventListener('input', () => { syncSwatches(); renderPreview(); });
+  }
+
+  // zoom
+  $('zoomIn').addEventListener('click', () => { ui.zoom = Math.min(2.2, +(ui.zoom + 0.1).toFixed(2)); renderPreview(); });
+  $('zoomOut').addEventListener('click', () => { ui.zoom = Math.max(0.5, +(ui.zoom - 0.1).toFixed(2)); renderPreview(); });
 
   $('downloadBtn').addEventListener('click', downloadPdf);
 
   applyPreset('textura');
+  syncSwatches();
   renderPreview();
 }
 
